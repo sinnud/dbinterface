@@ -4,7 +4,7 @@
 import os
 import unittest
 
-from py_pkg_db.sql import Sql
+from dbinterface.sql import Sql
 
 def GetPostgreSQLLoginInfo():
     # check password file exists

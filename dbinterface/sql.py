@@ -20,12 +20,7 @@ import logzero
 import traceback # Python error trace
 from logzero import logger
 
-try:
-    # call directly
-    from postgresql import PostgreSQL
-except:
-    # after install py_pkg_db, call this way
-    from py_pkg_db.postgresql import PostgreSQL
+from dbinterface.postgresql import PostgreSQL
 
 class Sql(object):
     def __repr__(self):
