@@ -1,11 +1,11 @@
 """
-| program file: sql.py
-| Python class: SQL
-| Purpose: utilities for database, calls postgresql.py
-| 
-| extra methods like table_exist, schema_exist, table_list_in_schema, func_list_in_schema
-|
-| Updates: 25MAR2021-LD allow called directly, also from installed package
+- program file: sql.py
+- Python class: SQL
+- Purpose: utilities for database, calls postgresql.py
+ 
+- extra methods like table_exist, schema_exist, table_list_in_schema, func_list_in_schema
+
+- Updates: 25MAR2021-LD allow called directly, also from installed package
 """
 import glob
 import hashlib
@@ -20,7 +20,10 @@ import logzero
 import traceback # Python error trace
 from logzero import logger
 
-from dbinterface.postgresql import PostgreSQL
+try:
+    from postgresql import PostgreSQL
+except:
+    from dbinterface.postgresql import PostgreSQL
 
 class Sql(object):
     def __repr__(self):
@@ -43,9 +46,16 @@ class Sql(object):
         return self.connection
 
     def clean_connection(self):
+        """
+        * clean connection. Used when database need to be re-connected.
+        """
         self.connection = None
 
     def sql_execute_with_replace(self, query, replace_dict=None, lower_logging_level=False):
+        """
+        * submit Query
+        * allow replace content of query before submit, like change schema name
+        """
         if replace_dict is not None:
             for key, val in replace_dict.items():
                 query = query.replace(key, val)
@@ -53,6 +63,9 @@ class Sql(object):
         return self.__connect().execute(query=query, lower_logging_level=lower_logging_level)
 
     def sql_run_file(self, sql_file, replace_dict=None, ignore_sql_errors=False, lower_logging_level=False):
+        """
+        * submit Query in SQL file
+        """
         with open(sql_file, encoding='utf-8') as f:
             for query in sqlparse.split(f.read()):
                 real_query = sqlparse.format(query, strip_comments=True).strip()
@@ -78,6 +91,9 @@ class Sql(object):
                           , ignore_sql_errors=False
                           , lower_logging_level=False
                           ):
+        """
+        * submit SQL files under one folder
+        """
 
         file_list = glob.glob(f"{folder_path}{os.sep}{file_pattern}")
         for idx, sql_file in enumerate(sorted(file_list), start=1):
@@ -90,7 +106,7 @@ class Sql(object):
     # extra member for further development
     def table_exist(self, gpschema, gptable):
         '''
-        | check if the table exists in given schema
+        * check if the table exists in given schema
         '''
         qry=f"select exists (select 1 from pg_tables where schemaname='{gpschema}' and tablename='{gptable}')"
         rst=self.sql_execute_with_replace(qry)
@@ -99,7 +115,7 @@ class Sql(object):
         
     def schema_exist(self, gpschema):
         '''
-        | check if the schema exists
+        * check if the schema exists
         '''
         qry=f"select exists (select 1 from information_schema.schemata where schema_name='{gpschema}')"
         rst=self.sql_execute_with_replace(qry)
@@ -108,7 +124,7 @@ class Sql(object):
         
     def table_list_in_schema(self, gpschema, pattern=None):
         '''
-        | obtain whole table list in given schema
+        * obtain whole table list in given schema
         '''
         qry=f"select table_name from information_schema.tables where table_schema='{gpschema}'"
         if pattern is not None:
@@ -120,7 +136,7 @@ class Sql(object):
         
     def func_list_in_schema(self, gpschema):
         '''
-        | obtain whole function list in given schema
+        * obtain whole function list in given schema
         '''
         qry=f"select quote_ident(n.nspname) || '.' || quote_ident(p.proname) || func.getFunctionParameter(p.oid)"
         qry=f"{qry} from pg_language AS l JOIN pg_proc AS p ON p.prolang = l.oid"
@@ -132,4 +148,13 @@ class Sql(object):
         return rst
 
     def import_from_file(self, query, file):
+        '''
+        * import data file into database table
+        '''
         return self.__connect().import_from_file(query, file)
+
+    def export_to_file(self, query, file):
+        '''
+        * export database table to data file
+        '''
+        return self.__connect().export_to_file(query, file)

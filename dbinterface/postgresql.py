@@ -11,6 +11,14 @@ import traceback # Python error trace
 from logzero import logger
 
 class PostgreSQL(object):
+    """
+    * Connect postgresql database, like Greenplum, using Python psycopg2 module
+    * provide basic methods like
+
+      - tables : return list of tables in one schema
+      - execute: submit query
+      - import/export table<->file
+    """
     def __init__(self, host, user, dbname, password, port='5432'):
         self.module_name = 'PostgreSQL'
         self.host = host
@@ -33,20 +41,32 @@ class PostgreSQL(object):
             logger.debug(f"Connection to database {self.host}:{self.port}.{self.dbname} closed in module {self.module_name}")
 
     def cursor(self):
+        """
+        * create cursor if not exist
+        """
         if not self.conn or self.conn.closed or self.conn.cursor().closed:
             self.connect()
         return self.conn.cursor()
 
     def tables(self, schema):
+        """
+        * list all tables under specific schema
+        """
         schema_query = f"SELECT table_name FROM information_schema.tables WHERE table_schema = {schema} AND table_type = 'BASE TABLE'"
         return [x[0] for x in self.execute(schema_query)]
 
     def connect(self):
+        """
+        * create connection
+        """
         self.conn = psycopg2.connect(self.conn_string)
         self.conn.set_session(autocommit=True)
         self.conn.set_client_encoding('UTF8')
 
     def execute(self, query, lower_logging_level=False):
+        """
+        * submit query
+        """
         if not self.conn or self.conn.closed:
             self.connect()
         start = time.time()
@@ -70,6 +90,14 @@ class PostgreSQL(object):
 
     # Used for importing data from file
     def import_from_file(self, query, file):
+        """
+        * import data from file into database table
+        * using `query` to specify format
+        * Example of query:
+
+          - `query=f"COPY {temptbl} FROM STDIN HEADER DELIMITER as '|' CSV NULL ''"`
+          - `query=f"COPY {temptbl} FROM STDIN DELIMITER as '|' CSV NULL ''"`
+        """
         if not self.conn or self.conn.closed:
             self.connect()
         logger.debug(f'Import from file {file} using query: \n\n {query} in module {self.module_name} on {self.host}:{self.port}.{self.dbname}')
@@ -88,6 +116,14 @@ class PostgreSQL(object):
 
     # Used for exporting data to a file
     def export_to_file(self, query, file):
+        """
+        * import data from file into database table
+        * using `query` to specify format
+        * Example of query:
+
+          - `query=f"COPY {temptbl} TO STDOUT HEADER DELIMITER as '|' CSV NULL ''"`
+          - `query=f"COPY {temptbl} TO STDOUT DELIMITER as '|' CSV NULL ''"`
+        """
         if not self.conn or self.conn.closed:
             self.connect()
         logger.debug(f'Export to file {file} using query: \n\n {query} \nin module {self.module_name} on {self.host}:{self.port}.{self.dbname}')
