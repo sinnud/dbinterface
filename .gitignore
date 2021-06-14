@@ -1,0 +1,13 @@
+# log files
+*.log
+
+# package related folder
+build
+dist
+*.egg-info
+
+# python cache
+__pycache__
+
+# VS code setting
+.vscode
